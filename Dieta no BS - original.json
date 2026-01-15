@@ -1,0 +1,765 @@
+{
+  "name": "Dieta no BS - original",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.choice }}",
+                    "rightValue": "Logar (TBCA)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9c2e942a-3e3a-4457-b18e-95acad71f9db"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "(TBCA)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "116794d6-1239-4821-8f82-94f7eccb53d4",
+                    "leftValue": "={{ $json.body.choice }}",
+                    "rightValue": "Logar (Manual)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "(Manual)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "505c89f2-71dd-4afa-a226-bbfbaea67e77",
+                    "leftValue": "={{ $json.body.choice }}",
+                    "rightValue": "Solver",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Solver"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        80
+      ],
+      "id": "33145644-686b-4ac9-a073-8fff8c9bd485",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dieta-ios",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        96
+      ],
+      "id": "fa5f4506-41dc-40d5-8689-71391ccbdda7",
+      "name": "Webhook iOS",
+      "webhookId": "f710b7d7-4eba-4227-ac60-df7753766043"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk",
+          "mode": "list",
+          "cachedResultName": "Dieta no BS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2115030679,
+          "mode": "list",
+          "cachedResultName": "DB tbca",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit#gid=2115030679"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically",
+              "readRowsUntil": "firstEmptyRow"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        512,
+        -96
+      ],
+      "id": "9094651f-3b75-4ca5-95fc-4499b5511ef4",
+      "name": "Ler DB (Alimentos)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KSXMglrYnsNxSN7j",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Captura linhas do DB\nconst linhasDB = $input.all();\n\n// 2. Captura input do usuário\nconst inputUsuario = $('Webhook iOS').item.json.body.text;\n\n// 3. Formata lista APENAS com nomes (para economizar tokens e focar no match)\nconst listaFormatada = linhasDB.map(item => {\n  const i = item.json;\n  return `- ${i[\"Nome do Alimento\"]}`; \n}).join('\\n');\n\n// 4. Prompt Focado em Match e Extração\nconst promptSistema = `\nVocê é um assistente de banco de dados.\nSua única função é encontrar o alimento correspondente na lista e extrair a quantidade.\n\nLISTA DE ALIMENTOS VÁLIDA:\n${listaFormatada}\n\nINPUT DO USUÁRIO: \"${inputUsuario}\"\n\nREGRAS:\n1. Encontre o nome EXATO na lista que corresponde ao input.\n2. Se não encontrar nada parecido, retorne \"erro\".\n3. Extraia a quantidade numérica (se o usuário não disser, assuma 100).\n4. Retorne JSON estrito:\n{\n  \"alimento\": \"String (NOME EXATO DA LISTA)\",\n  \"qtd_numero\": Number (apenas o valor numérico, ex: 100)\n}\n`;\n\nreturn {\n  json: {\n    prompt: promptSistema\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -96
+      ],
+      "id": "294991e6-5de6-4ef9-bd8e-1bc7c318e994",
+      "name": "Script (Formatar Lista)"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1024,
+        -96
+      ],
+      "id": "139b919b-0ac6-448f-943a-c63686f5652f",
+      "name": "IA (Analisar TBCA)",
+      "credentials": {
+        "openAiApi": {
+          "id": "ovGwLx8HCyamhkCw",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk",
+          "mode": "list",
+          "cachedResultName": "Dieta no BS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 828175543,
+          "mode": "list",
+          "cachedResultName": "LOG_TBCA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit#gid=828175543"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Alimento": "={{ $json.output[0].content[0].text.alimento }}",
+            "Quantidade": "={{ $json.output[0].content[0].text.qtd_numero }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Alimento",
+              "displayName": "Alimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Quantidade",
+              "displayName": "Quantidade",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        -96
+      ],
+      "id": "8d8331a1-04a4-4e05-8e88-bdd43b079a2b",
+      "name": " Gravar (Tabela TBCA)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KSXMglrYnsNxSN7j",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Você é um nutricionista pessoal.\nAnalise o input do usuário: \"{{ $('Webhook iOS').item.json.body.text }}\"\n\nREGRAS:\n1. Se o usuário fornecer macros (ex: \"Frango 30p 0c 5g\"), USE ESSES VALORES.\n2. Se fornecer apenas o nome (ex: \"2 Ovos fritos\"), ESTIME os macros padrão para a quantidade informada.\n3. Retorne APENAS JSON estrito.\n\nJSON Output Schema:\n{\n  \"alimento\": \"Nome curto do alimento\",\n  \"quantidade\": \"Texto (ex: 100g ou 2 un)\",\n  \"prot\": Number (apenas numeros),\n  \"carb\": Number (apenas numeros),\n  \"gord\": Number (apenas numeros)\n}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        96
+      ],
+      "id": "1f8d0b85-5482-4ec8-87a1-3baa7341b146",
+      "name": "IA (Estimativa Manual)",
+      "credentials": {
+        "openAiApi": {
+          "id": "ovGwLx8HCyamhkCw",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk",
+          "mode": "list",
+          "cachedResultName": "Dieta no BS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1533275504,
+          "mode": "list",
+          "cachedResultName": "LOG_MANUAL",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit#gid=1533275504"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Alimento": "={{ $json.output[0].content[0].text.alimento }}",
+            "Quantidade": "={{ $json.output[0].content[0].text.quantidade }}",
+            "Prot": "={{ $json.output[0].content[0].text.prot }}",
+            "Carb": "={{ $json.output[0].content[0].text.carb }}",
+            "Gord": "={{ $json.output[0].content[0].text.gord }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Alimento",
+              "displayName": "Alimento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantidade",
+              "displayName": "Quantidade",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Prot",
+              "displayName": "Prot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Carb",
+              "displayName": "Carb",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Gord",
+              "displayName": "Gord",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        96
+      ],
+      "id": "9d40b690-d850-450c-95e0-e1328987b0d2",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KSXMglrYnsNxSN7j",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Recebe e trata o input do iPhone\nconst bodyBruto = $('Webhook iOS').item.json.body;\nlet bodyJson;\n\n// Garante que é JSON mesmo se vier como texto\ntry {\n  if (typeof bodyBruto === 'string') {\n    bodyJson = JSON.parse(bodyBruto);\n  } else {\n    bodyJson = bodyBruto;\n  }\n} catch (e) {\n  bodyJson = { combo: \"ERRO + ERRO\" };\n}\n\nconst combo = bodyJson.combo || \"Vazio + Vazio\";\nconst partes = combo.split(\" + \");\n\n// O iPhone manda: \"Carbo + Proteína\" (Ex: \"Arroz Branco + Frango\")\nconst carboMenu = partes[0].trim();\nconst protMenu = partes[1].trim();\n\nlet proteinaOficial = \"\";\nlet carboOficial = \"\";\n\n// --- TRADUÇÃO: PROTEÍNAS ---\nif (protMenu === \"Frango\") {\n    proteinaOficial = \"Peito de Frango Cozido\";\n} else if (protMenu === \"Patinho\") {\n    proteinaOficial = \"Patinho Grelhado\";\n} else {\n    proteinaOficial = protMenu; // Caso mande outro, usa o original\n}\n\n// --- TRADUÇÃO: CARBOIDRATOS ---\nif (carboMenu === \"Arroz Branco\") {\n    carboOficial = \"Arroz Branco\";\n} else if (carboMenu === \"Batata Inglesa\") {\n    carboOficial = \"Batata Inglesa\";\n} else if (carboMenu === \"Macarrão\") {\n    carboOficial = \"Macarrão\";\n} else {\n    carboOficial = carboMenu; // Caso mande outro, usa o original\n}\n\n// Retorna os nomes exatos para o Google Sheets\nreturn {\n  json: {\n    proteina: proteinaOficial,\n    carbo: carboOficial,\n    debug_original: combo\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        288
+      ],
+      "id": "35bde097-b1b4-4b83-a136-dd2bc9199dd6",
+      "name": "Tradutor de Combo"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk",
+          "mode": "list",
+          "cachedResultName": "Dieta no BS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1378726331,
+          "mode": "list",
+          "cachedResultName": "SOLVER_AUTO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit#gid=1378726331"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "INPUT PROTEÍNA": "={{ $('Tradutor de Combo').item.json.proteina }}",
+            "INPUT CARBO": "={{ $('Tradutor de Combo').item.json.carbo }}",
+            "row_number": 2
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "INPUT PROTEÍNA",
+              "displayName": "INPUT PROTEÍNA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "INPUT CARBO",
+              "displayName": "INPUT CARBO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "META PROT (g)",
+              "displayName": "META PROT (g)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "META CARBO (g)",
+              "displayName": "META CARBO (g)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "RESULTADO PROT (g)",
+              "displayName": "RESULTADO PROT (g)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "RESULTADO CARBO (g)",
+              "displayName": "RESULTADO CARBO (g)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TOTAL KCAL",
+              "displayName": "TOTAL KCAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        288
+      ],
+      "id": "be78069c-4e9a-49c9-83a9-81976561d66c",
+      "name": "Solver Inputs",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KSXMglrYnsNxSN7j",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk",
+          "mode": "list",
+          "cachedResultName": "Dieta no BS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1378726331,
+          "mode": "list",
+          "cachedResultName": "SOLVER_AUTO",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yVp7WvIQWs84o_VtvOscupn_dzC-L0B65cLnX2J4MKk/edit#gid=1378726331"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          },
+          "outputFormatting": {
+            "values": {
+              "general": "FORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          },
+          "returnFirstMatch": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        288
+      ],
+      "id": "2e5f50c5-25e8-4d1f-b828-e53989225d16",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KSXMglrYnsNxSN7j",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.meu_texto }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1616,
+        288
+      ],
+      "id": "c32adc4d-12a5-4a1e-9a62-53b22536ec66",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Função de segurança para pegar o texto limpo\nfunction pegar(nomeColuna) {\n  const valor = item[nomeColuna];\n  if (!valor) return \"---\";\n  return String(valor).trim();\n}\n\n// Prepara os números\nconst qtdProt = Math.round(Number(item[\"RESULTADO PROT (g)\"]) || 0);\nconst qtdCarbo = Math.round(Number(item[\"RESULTADO CARBO (g)\"]) || 0);\nconst totalKcal = Math.round(Number(item[\"TOTAL KCAL\"]) || 0);\n\n// SEU LAYOUT EXATO AQUI:\nconst textoFinal = \n`DIETA CALCULADA\n----------------------------\n\nPROTEINA: ${pegar(\"INPUT PROT\")}\nComer: ${qtdProt}g\n\nCARBO: ${pegar(\"INPUT CARBO\")}\nComer: ${qtdCarbo}g\n\nTOTAL: ${totalKcal} kcal`;\n\nreturn {\n  json: {\n    meu_texto: textoFinal\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        288
+      ],
+      "id": "02d5fa12-9b6f-4aaa-81f7-70638caf6dda",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Ler DB (Alimentos)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IA (Estimativa Manual)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tradutor de Combo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook iOS": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler DB (Alimentos)": {
+      "main": [
+        [
+          {
+            "node": "Script (Formatar Lista)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script (Formatar Lista)": {
+      "main": [
+        [
+          {
+            "node": "IA (Analisar TBCA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA (Analisar TBCA)": {
+      "main": [
+        [
+          {
+            "node": " Gravar (Tabela TBCA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA (Estimativa Manual)": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tradutor de Combo": {
+      "main": [
+        [
+          {
+            "node": "Solver Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solver Inputs": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "dd31ace5-a74e-413a-9e94-cb062d87f91d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a403f6552ab12b75896e98d7440abaf247ad96c64d130ded972889fd49ecae35"
+  },
+  "id": "HFuOvOpJMTVMkWnu",
+  "tags": []
+}
